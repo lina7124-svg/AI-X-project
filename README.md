@@ -3,7 +3,54 @@
 
 ## Members
 - 박예영, 의예과 1학년
-- 변서현, 의예과 1학년
+- 변서현, 의예과 1학년, sunnybyeon@hanyang.ac.kr
 
-## Dataset
+## Ⅱ. Datasets
+
 [MindBigData: The "MNIST" of Brain Digits on Kaggle](https://www.kaggle.com/datasets/vijayveersingh/1-2m-brain-signal-data)
+
+위의 링크에서 확인할 수 있는 MindBigData를 사용하였다. 이 데이터셋은 한 사람을 대상으로 0에서 9까지의 숫자를 보여줬을 때 2초간의 뇌전도(EEG) 데이터를 담고 있다. Emotive EPOC (EP), Emotiv Insight (IN), Interaxon Muse (MU), NeuroSky MindWave (MW)의 4개의 기기를 이용해 측정한 데이터이며, 각 기기별로 제공된 데이터의 수는 다음과 같다. 여기서 데이터 수는 하나의 숫자를 보여주는 사건인 이벤트(event)의 수가 아니라, 각 이벤트의 채널(channel, 뇌전도 측정 위치)별 데이터를 모두 개별 데이터로 간주한 숫자이다.
+
+| 기기 | 데이터 수 |
+| ---- | --------- |
+| EP   | 910,476   |
+| IN   | 65,250    |
+| MU   | 163,932   |
+| MW   | 67,635    |
+
+각 기기별로 다른 조합의 채널에서 데이터가 측정되었으며, 각 기기의 데이터 예시를 아래 사진에 나타내었다. 코드(code)는 대상자에게 보여준 숫자를 의미한다.
+
+![EP](./figures/eeg-EP.png)
+![IN](./figures/eeg-IN.png)
+![MU](./figures/eeg-MU.png)
+![MW](./figures/eeg-MW.png)
+
+데이터 중 숫자가 아닌 자극을 의미하는 `-1`의 코드를 가진 데이터는 제외하였다. 또, 한 개의 기기에서만 측정한 채널은 제외하여 AF3, AF4, FP1의 3개 채널 데이터만 활용하였다. 이들 데이터의 코드별 분포는 다음과 같다.
+
+![class-counts](./figures/class-count.png)
+
+각 데이터는 채널별로 분류하여 다음의 전처리 과정을 거쳤다. 뇌전도 데이터가 같은 길이(시간 간격)로 제공되지 않아, 모델에 따라 필요 시 데이터의 마지막에 0을 추가해 길이를 통일하는 과정이 있었다.
+
+```python
+def normalize(df):
+    devices = df["device"].unique()
+    for device in devices:
+        df_device = df[df["device"] == device]
+        all_amplitude = df_device["data"].explode().to_list()
+        mean = np.mean(all_amplitude)
+        std = np.std(all_amplitude)
+        df.loc[df["device"] == device, "data"] = (df_device["data"] - mean) / std
+    return df
+
+
+def add_padding(df):
+    max_size = max(df["size"].unique())
+    df.loc[:, "data"] = df["data"].apply(
+        lambda eeg: np.pad(eeg, (0, max_size), mode="constant", constant_values=0)[
+            :max_size
+        ]
+    )
+    return df, max_size
+```
+
+데이터 처리 및 시각화와 관련된 코드는 [dataset.py](./dataset.py)에서 확인할 수 있다.
