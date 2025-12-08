@@ -313,6 +313,7 @@ optimizer_cnn = torch.optim.Adam(model_cnn.parameters(), lr=1e-6, weight_decay=1
 
 ### CNN
 (1) Accuracy Function
+
 <img width="500" height="500" alt="CNN-accuracy-good-01" src="https://github.com/user-attachments/assets/50645118-1e4b-4f6a-b57b-e5f6c10d9ea3" />
 
 Train Accuracy는 약 9.8%~10.3% 범위에서 증가하는 경향성을 띠었다. 
@@ -321,6 +322,7 @@ Validation Accuracy는 Epoch 10까지는 약 9.8%~10.2% 범위에서 증가하�
 즉, CNN 모델의 분류 정확도는 거의 향상되지 않았음을 알 수 있었다. 
 
 (2) Loss Funcion
+
 <img width="500" height="500" alt="CNN-loss-good-01" src="https://github.com/user-attachments/assets/6fac4823-0b72-4f6a-aa9b-cfc3c779ec88" />
 
 Train loss는 약 2.445%에서 2.315%까지 감소하였으며, 
@@ -335,6 +337,7 @@ CNN 구조만으로는 자극 후 이어지는 복잡한 ERP 데이터에 대한
 ### EEG-LSTM (raw EEG data)
 
 (1) Accuracy Function
+
 <img width="500" height="500" alt="EEG-LSTM-accuracy-good-02" src="https://github.com/user-attachments/assets/1f7a299d-a4ec-4516-88f3-158db671d36e" />
 
 Train accuracy는 약 10.0% ~ 11.6%까지 증가하는 경향성을 보였다.
@@ -343,6 +346,7 @@ Validation accuracy는 약 9.9%에서 12.0% 이상까지 상승하였으며, 특
 이는 LSTM이 시간 순서가 있는 raw EEG 신호의 패턴을 포착하고 있으며, CNN보다 일관된 성능 향상을 만들어내고 있음을 의미한다.
 
 (2) Loss Funcion
+
 <img width="500" height="500" alt="EEG-LSTM-loss-good-02" src="https://github.com/user-attachments/assets/dac9adbf-b1aa-4e46-8ba3-af41702371cc" />
 
 Train loss는 약 2.304%에서 2.297%로 감소하였다.
@@ -357,6 +361,7 @@ single-trial EEG가 가지는 근본적인 한계(노이즈, 피험자 차이)�
 ### ERP-LSTM 
 
 (1) Accuracy Function
+
 <img width="500" height="500" alt="ERP-LSTM-accuracy-good-04" src="https://github.com/user-attachments/assets/7696b99d-6538-4c81-b59d-960583f8501d" />
 
 Train accuracy는 일정하지는 않지만, 약 9.2% ~ 11%로 증가하는 경향을 보였다. 
@@ -366,6 +371,7 @@ Validation accuracy는 약 10.3%부터 11.8%까지 일관되게 상승하다가,
 EEG-LSTM과 비슷한 수준의 train accuracy와 val accuracy를 보여주었다. 
 
 (2) Loss Funcion
+
 <img width="500" height="500" alt="ERP-LSTM-loss-good-04" src="https://github.com/user-attachments/assets/35ce0e03-fc15-4584-bea6-9a9d03321de4" />
 
 Train loss는 약 2.307%부터 2.303으로 감소하는 경향을 띠었다. 
