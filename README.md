@@ -385,6 +385,7 @@ CNN 대비 loss 감소 폭은 작지만, loss 곡선의 기울기가 거의 일�
 결과를 통해, ERP가 노이즈를 줄여서 LSTM 학습을 안정화시켰음을 알 수 있었다. 
 raw EEG-LSTM에 비해 Epoch에 따른 loss 곡선의 변동성이 낮은 것을 통해, ERP 생성 과정이 노이즈와 개별 trial 간의 변동성을 줄여주었음을 확인할 수 있었다. 
 
+
 ## Ⅴ. Discussion
 
 ### 결과 분석 및 정리
@@ -420,3 +421,36 @@ LSTM에 attention layer를 추가함으로써 특정 시간 구간의 중요도�
 ERP data에 LSTM을 적용한 ERP-LSTM 모델은 raw EEG data를 활용했을 때보다 상대적으로 안정적인 학습 곡선과 일반화 성능을 보여주었다. 
 
 절대적인 정확도는 낮지만, single-trial EEG가 가진 본질적인 데이터 특성의 한계도 영향을 미쳤을 것이라고 생각한다. 
+
+
+## Ⅵ. Related Works
+
+본 프로젝트에서 사용한 라이브러리는 다음의 명령어를 통해 설치할 수 있다.
+```bash
+pip install torch torchvision matplotlib
+```
+
+참고한 자료는 다음과 같다.
+- 강의자료로 제공된 추가 학습 자료 중 Introduction to RNN
+
+- Zheng, X., Cao, Z., & Bai, Q. (2020). An Evoked Potential-Guided Deep Learning brain representation for visual classification. arXiv (Cornell University). [https://doi.org/10.48550/arxiv.2006.15357](https://doi.org/10.48550/arxiv.2006.15357)
+
+    ERP 분석에 참고하였다.
+
+- Faouzi, J. (2024). Time Series Classification: A review of Algorithms and Implementations. IntechOpen eBooks. [https://doi.org/10.5772/intechopen.1004810](https://doi.org/10.5772/intechopen.1004810)
+
+    CNN with Recurrence Plot 모델 구축에 참고하였다.
+
+- Introduction to PyTorch - Pytorch Documentation [https://docs.pytorch.org/tutorials/beginner/introyt/introyt_index.html](https://docs.pytorch.org/tutorials/beginner/introyt/introyt_index.html)
+
+    이 튜토리얼 시리즈를 코드 작성 전반에 참고하였다.
+
+- Matplotlib — Visualization with Python [https://matplotlib.org/](https://matplotlib.org/)
+
+    그래프를 그리는 등 시각화 과정에서 matplotlib documentation을 참고하였다.
+
+
+## Ⅶ. Roles
+
+- 박예영: ERP-LSTM 코드 구현 및 모델 학습. 보고서 작성(Ⅰ, Ⅳ, Ⅴ). 영상 촬영.
+- 변서현: EEG-LSTM, CNN 코드 구현 및 모델 학습. 보고서 작성(Ⅱ, Ⅲ). 영상 촬영.
