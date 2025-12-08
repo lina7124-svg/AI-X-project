@@ -25,51 +25,283 @@ EEG는 시간적, 공간적 특징이 복잡하게 얽혀 있으므로, CNN, LST
 
 [MindBigData: The "MNIST" of Brain Digits on Kaggle](https://www.kaggle.com/datasets/vijayveersingh/1-2m-brain-signal-data)
 
-위의 링크에서 확인할 수 있는 MindBigData를 사용하였다. 이 데이터셋은 한 사람을 대상으로 0에서 9까지의 숫자를 보여줬을 때 2초간의 뇌전도(EEG) 데이터를 담고 있다. Emotive EPOC (EP), Emotiv Insight (IN), Interaxon Muse (MU), NeuroSky MindWave (MW)의 4개의 기기를 이용해 측정한 데이터이며, 각 기기별로 제공된 데이터의 수는 다음과 같다. 여기서 데이터 수는 하나의 숫자를 보여주는 사건인 이벤트(event)의 수가 아니라, 각 이벤트의 채널(channel, 뇌전도 측정 위치)별 데이터를 모두 개별 데이터로 간주한 숫자이다.
+위의 링크에서 확인할 수 있는 MindBigData를 사용하였다. 이 데이터셋은 한 사람을 대상으로 0에서 9까지의 숫자를 보여줬을 때 2초간의 뇌전도(EEG) 데이터를 담고 있다. Emotive EPOC (EP), Emotiv Insight (IN), Interaxon Muse (MU), NeuroSky MindWave (MW)의 4개의 기기를 이용해 측정한 데이터이며, 각 기기별로 제공된 데이터의 수는 다음과 같다. 여기서 데이터 수는 하나의 숫자를 보여주는 사건인 이벤트(event)의 수를 의미한다.
 
 | 기기 | 데이터 수 |
 | ---- | --------- |
-| EP   | 910,476   |
-| IN   | 65,250    |
-| MU   | 163,932   |
+| EP   | 65,034    |
+| IN   | 13,050    |
+| MU   | 40,983    |
 | MW   | 67,635    |
 
-각 기기별로 다른 조합의 채널에서 데이터가 측정되었으며, 각 기기의 데이터 예시를 아래 사진에 나타내었다. 코드(code)는 대상자에게 보여준 숫자를 의미한다.
+각 기기별로 다른 채널에서 데이터가 측정되었기에, 데이터 수가 가장 많은 EP 데이터만을 이용하여 진행하였다. EP는 AF3, AF4, F3, F4, F7, F8, FC5, FC6, O1, O2, P7, P8, T7, T8의 14개 채널에서 측정된 데이터를 담고 있다. 채널 기호는 10-20 시스템을 이용해 나타낸 것이다.
 
-![EP](./figures/eeg-EP.png)
-![IN](./figures/eeg-IN.png)
-![MU](./figures/eeg-MU.png)
-![MW](./figures/eeg-MW.png)
+데이터 중 숫자가 아닌 자극을 의미하는 `-1`의 코드를 가진 데이터는 제외하였다. 데이터의 코드별 분포는 다음과 같다.
 
-데이터 중 숫자가 아닌 자극을 의미하는 `-1`의 코드를 가진 데이터는 제외하였다. 또, 한 개의 기기에서만 측정한 채널은 제외하여 AF3, AF4, FP1의 3개 채널 데이터만 활용하였다. 이들 데이터의 코드별 분포는 다음과 같다.
+![Class Counts](./figures/class-count.png)
 
-![class-counts](./figures/class-count.png)
+데이터의 공통적인 전처리 과정은 다음과 같다.
 
-각 데이터는 채널별로 분류하여 다음의 전처리 과정을 거쳤다. 뇌전도 데이터가 같은 길이(시간 간격)로 제공되지 않아, 모델에 따라 필요 시 데이터의 마지막에 0을 추가해 길이를 통일하는 과정이 있었다.
-
+먼저, 모든 데이터는 z-score 정규화를 거쳤다.
 ```python
-def normalize(df):
-    devices = df["device"].unique()
-    for device in devices:
-        df_device = df[df["device"] == device]
-        all_amplitude = df_device["data"].explode().to_list()
-        mean = np.mean(all_amplitude)
-        std = np.std(all_amplitude)
-        df.loc[df["device"] == device, "data"] = (df_device["data"] - mean) / std
-    return df
-
-
-def add_padding(df):
-    max_size = max(df["size"].unique())
-    df.loc[:, "data"] = df["data"].apply(
-        lambda eeg: np.pad(eeg, (0, max_size), mode="constant", constant_values=0)[
-            :max_size
-        ]
-    )
+def normalize_signal(sig, eps=1e-8):
+    sig = sig.astype(float)
+    mean = sig.mean()
+    std = sig.std()
+    if std < eps:
+        return sig - mean
+    return (sig - mean) / std
+```
+또한, 각 데이터별로 EEG 길이를 선형보간을 통해 가장 긴 데이터에 맞추어 통일하였다.
+```python
+def resize_signal(sig, target_len):
+    cur = len(sig)
+    x_old = np.linspace(0, 1, cur)
+    x_new = np.linspace(0, 1, target_len)
+    return np.interp(x_new, x_old, sig)
     return df, max_size
 ```
 
-데이터 처리 및 시각화와 관련된 코드는 [dataset.py](./dataset.py)에서 확인할 수 있다.
+전처리 과정을 거친 데이터 중 하나를 예시로 다음 그래프에 표현하였다. 코드(code)는 대상자에게 보여준 숫자를 의미한다.
+
+![Example EEG](./figures/example-EEG.png)
+
+이 외 각 모델별로 필요한 전처리는 아래에 자세히 설명하였다.
+
+데이터 처리 및 시각화와 관련된 코드는 [preprocessing.py](./preprocessing.py)와 [visualize.py](./visualize.py)에서 확인할 수 있다.
+
+위의 2개 그래프를 출력하기 위해서는 아래 명령어를 사용할 수 있다.
+```bash
+python visualize.py
+```
+
+
+## Ⅲ. Methodology
+
+### 모델
+본 프로젝트에서는 ERP-LSTM, EEG-LSTM, CNN with Recurrence Plot의 3가지 모델을 구축하였다.
+
+각 모델의 정의 코드는 [models.py](./models.py)에서 확인할 수 있다.
+
+#### ERP-LSTM
+LSTM(Long Short-Term Memory)은 RNN(Recurrent Neural Network)의 하나로, 시계열 데이터를 분석하는 데 가장 적합하다고 꼽히는 모델 중 하나이다. RNN은 시계열 데이터의 값을 받아 각 시점마다 내부 상태(internal state, hidden state)를 업데이트하는 방법으로 진행함으로써 시계열 데이터의 특성을 잘 반영한다. LSTM은 이러한 기본 RNN에 셀(cell state)을 추가하여 발전시킨 형태이다.
+
+ERP(Event Related Potential)는 EEG 데이터에서 유의미한 feature을 추출하기 위한 방법 중 하나이다. 본 프로젝트에서는 Zheng et al. (2020)를 참고하여 ERP를 계산하였다. 여러 시행의 데이터를 하나의 그룹으로 묶은 뒤, 각 시점의 데이터를 평균내면 ERP 값을 구할 수 있다. 이 경우 유의미한 시점의 데이터는 모두 비슷한 수를 나타낼 것이기 때문에 평균도 그 값 주변에서 형성될 것이다. 그러나, 유의미하지 않은 시점의 데이터는 무작위로 다양하게 형성될 것이기 때문에 평균을 구하면 0에 가깝게 나타날 것으로 예상할 수 있다. 이러한 특징을 이용하여 유의미한 값과 그렇지 않은 값을 구분하는 것이 ERP이다.
+
+본 프로젝트의 첫 번째 모델은 이러한 방법으로 구한 ERP를 LSTM에 적용한 것이다.
+
+다음은 ERP 데이터 중 하나를 그래프로 나타낸 것이다.
+
+![Example ERP](./figures/example-ERP.png)
+
+ERP를 계산하는 코드는 다음과 같다.
+```python
+def extract_erp(df, n_trials_per_erp=12, min_trials=8):
+    erp_list = []
+
+    for code in sorted(df["code"].unique()):
+        subset = df[df["code"] == code].copy()
+
+        signals = list(subset["data_arr"])
+        idx = 0
+
+        while idx < len(signals):
+            chunk = signals[idx : idx + n_trials_per_erp]
+            if len(chunk) < min_trials:
+                break
+
+            erp_signal = np.array(chunk).mean(axis=0)
+
+            erp_list.append(
+                {"code": int(code), "signal": erp_signal, "length": len(erp_signal)}
+            )
+
+            idx += n_trials_per_erp
+
+    return pd.DataFrame(erp_list)
+```
+
+ERP-LSTM 모델은 다음과 같이 정의하였다.
+```python
+class ERPLSTM(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.lstm = torch.nn.LSTM(
+            input_size=14, hidden_size=64, num_layers=2, dropout=0.8, batch_first=True
+        )
+        self.fc = torch.nn.Linear(64, 10)
+        self.dropout = torch.nn.Dropout(0.5)
+
+        self.activation = torch.nn.ReLU()
+
+    def forward(self, x):
+        _, (h_n, _) = self.lstm(x)
+        h_last = h_n[-1]
+        x = self.activation(h_last)
+        x = self.dropout(x)
+        x = self.fc(x)
+
+        return x
+```
+
+#### EEG-LSTM
+두 번째 모델은 앞선 ERP-LSTM 모델과 유사하지만, ERP를 계산하지 않고 EEG 데이터를 그대로 LSTM에 적용한 것으로 설정하였다.
+
+EEG-LSTM 모델은 다음과 같이 정의하였다.
+```python
+class EEGLSTM(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.lstm = torch.nn.LSTM(
+            input_size=14, hidden_size=32, num_layers=2, dropout=0.5, batch_first=True
+        )
+        self.fc = torch.nn.Linear(32, 10)
+        self.dropout = torch.nn.Dropout(0.5)
+
+        self.activation = torch.nn.ReLU()
+
+    def forward(self, x):
+        _, (h_n, _) = self.lstm(x)
+        h_last = h_n[-1]
+        x = self.activation(h_last)
+        x = self.dropout(x)
+        x = self.fc(x)
+
+        return x
+```
+
+#### CNN with Recurrence Plot
+CNN(Convolutional Neural Network)은 이미지 분석 분야에서 가장 주목받는 모델 중 하나이다. CNN은 필터(filter)라고도 불리는 커널(kernel)로 input 데이터를 지나가며 각 지점에서의 합성곱으로 output을 계산한다.
+
+![CNN의 원리](./cnn.gif)
+
+(사진 출처: [https://www.kaggle.com/code/aayusmaanjain/basics-of-cnn-with-pytorch-lightning](https://www.kaggle.com/code/aayusmaanjain/basics-of-cnn-with-pytorch-lightning))
+
+이러한 방법은 커널의 값을 조절하여 이미지의 특정 패턴을 파악하는 데 적합하기에 이미지 분석에서 좋은 결과를 보이는 경우가 많다.
+
+시계열 데이터를 분석하는 접근 방법 중 하나는 시계열 데이터를 그래프, 이미지로 표현한 뒤 이를 input으로 하는 이미지 모델을 이용하는 것이다. 본 프로젝트에서는 EEG 데이터를 recurrence plot으로 표현한 뒤, 이 그래프를 CNN으로 분석하는 방법을 택하였다. Recurrence plot은 시계열 데이터에서 각 시점의 데이터 사이의 차이를 시각화한 그래프이다. `n * n` matrix로 나타내는데, 이 matrix의 `(i, j)`에는 `i` 시점의 데이터와 `j` 시점의 데이터 간의 거리가 담긴다. Recurrence plot을 이용하면 어느 시점의 데이터들이 유사한지, 즉 어떤 시점 사이에서 반복이 일어났는지를 파악하여 패턴을 분석할 수 있다.
+
+다음은 recurrence plot 중 하나를 예시로 제시한 것이다.
+
+![Example Recurrence Plot](./figures/example-RP.png)
+
+EEG 데이터로부터 recurrence plot을 계산하는 코드는 다음과 같이 구현하였다.
+```python
+def to_recurrence_plot(data):
+    plots = []
+    for channel_data in data:
+        data_length = len(channel_data)
+
+        plot = np.zeros((data_length, data_length))
+        for i in range(data_length):
+            for j in range(data_length):
+                plot[i, j] = np.abs(channel_data[i] - channel_data[j])
+
+        plots.append(plot)
+
+    result = np.sum(plots, axis=0)
+
+    # normalizing the plot
+    result = (result - result.min()) / (result.max() - result.min())
+
+    return result
+```
+
+CNN 모델은 다음과 같이 정의하였다.
+```python
+class CNN(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=5)
+        self.covn2 = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=5)
+
+        self.fc = torch.nn.Linear(1 * 4 * 4, 10)
+
+        self.dropout = torch.nn.Dropout(0.75)
+
+        self.activation = torch.nn.ReLU()
+        self.pool = torch.nn.MaxPool2d(kernel_size=2)
+
+    def forward(self, x):
+        x = torch.unsqueeze(x, 1)  # (batch_size, 28, 28) -> (batch_size, 1, 28, 28)
+        x = self.activation(
+            self.conv1(x)
+        )  # (batch_size, 1, 28, 28) -> (batch_size, 1, 24, 24)
+        x = self.pool(x)  # (batch_size, 1, 24, 24) -> (batch_size, 1, 12, 12)
+
+        x = self.dropout(x)
+
+        x = self.activation(
+            self.conv1(x)
+        )  # (batch_size, 1, 12, 12) -> (batch_size, 1, 8, 8)
+```
+
+### 모델 훈련
+
+아래 명령어를 실행하여 모델을 훈련시킬 수 있다.
+```bash
+python project.py
+```
+
+다음과 같이 각 모델별로 필요한 데이터셋을 불러왔다. train 데이터와 validation 데이터는 4:1의 크기를 같도록 하였다. ERP의 경우, 12개 데이터를 한 묶음으로 하여 하나의 ERP를 추출하므로 이를 고려해서 먼저 전체 데이터를 48:1의 크기로 분리하고, train 데이터에서만 ERP를 추출하여 결과적으로 4:1의 데이터 크기 비를 갖도록 하였다.
+```python
+erp_train_dataset = ERPDataset(X_ERP_train, Y_ERP_train)
+erp_val_dataset = ERPDataset(X_ERP_val, Y_ERP_val)
+erp_train_dataloader = torch.utils.data.DataLoader(
+    erp_train_dataset, batch_size=batch_size, shuffle=True
+)
+erp_val_dataloader = torch.utils.data.DataLoader(
+    erp_val_dataset, batch_size=batch_size, shuffle=True
+)
+...
+```
+
+이후 각 모델별로 훈련을 진행하였다. 훈련 루프는 아래에 간략히 나타내었으며, [train.py](./train.py)에서 자세히 확인할 수 있다.
+```python
+for epoch in range(epochs):
+    # Training
+    model.train()
+    train_loss, train_acc = 0, 0
+
+    for data, label in train_dataloader:
+        data = data.to(device)
+        label = label.to(device)
+
+        # 초기화
+        optimizer.zero_grad()
+
+        # prediction 및 loss 계산
+        prediction = model(data)
+        loss = loss_function(prediction, label)
+        train_loss += loss.item()
+        train_acc += get_correct_count(prediction, label)
+
+        # Backpropagation
+        loss.backward()
+        optimizer.step()
+    ...
+```
+
+훈련에 있어 손실 함수(loss function)는 Cross Entropy Loss를 이용하였으며, 옵티마이저(optimizer function)로는 Adam을 이용했다. 각 모델별로 사용한 learning rate, weight decay는 다음과 같다.
+```python
+# ERP-LSTM
+optimizer_erp_lstm = torch.optim.Adam(
+    model_erp_lstm.parameters(), lr=0.000007, weight_decay=1e-5
+)
+
+# EEG-LSTM
+optimizer_eeg_lstm = torch.optim.Adam(
+    model_eeg_lstm.parameters(), lr=1e-5, weight_decay=1e-6
+)
+
+# CNN with Recurrence Plot
+optimizer_cnn = torch.optim.Adam(model_cnn.parameters(), lr=1e-6, weight_decay=1e-6)
+```
+
+
 
 ## Ⅳ. Model evaluation & Results
 ### 평가 지표
