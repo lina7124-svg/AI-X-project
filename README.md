@@ -1,6 +1,8 @@
 # 뇌전도 기록을 통한 시각 자극 판별
 > Option A
 
+> 발표 영상: [https://youtu.be/djxJZR6qPNA](https://youtu.be/djxJZR6qPNA)
+
 ## Members
 - 박예영, 의예과 1학년, lina7124@hanyang.ac.kr
 - 변서현, 의예과 1학년, sunnybyeon@hanyang.ac.kr
