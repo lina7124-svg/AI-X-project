@@ -51,8 +51,6 @@ def to_array(s):
 
 
 df_ep["data_arr_original"] = df_ep["data_str"].apply(to_array)
-# data_str은 더이상 필요하지 않으니 drop
-df_ep.drop("data_str", inplace=True)
 
 
 # timestamp 기준으로 정렬
