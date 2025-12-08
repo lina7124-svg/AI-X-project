@@ -394,7 +394,7 @@ raw EEG-LSTM에 비해 Epoch에 따른 loss 곡선의 변동성이 낮은 것을
 본 프로젝트에서는 적은 채널 수로부터 얻은 single-trial data를 활용했으며, EEG data는 다른 종류의 data에 비해 노이즈와 trial 간 변동성이 크다. 
 학습이 어려운 data type에서 1–2% 정도의 성능 향상이 나타났으며, 특히 epoch 전체에 걸쳐 일관되게 val accuracy가 train보다 높거나 비슷하게 유지되는 패턴을 통해 모델이 신호를 조금이나마 학습하고 있음을 짐작할 수 있었다. 
 
-## 한계점 고찰
+### 한계점 고찰
 
 EEG data는 근육 움직임, 눈 깜빡임 등 다양한 artifact에 매우 민감하다.
 trial을 평균내지 않고 단일 trial을 사용하면 EEG 신호는 노이즈에 묻혀서 class 간 차이가 거의 없을 것이다. 
