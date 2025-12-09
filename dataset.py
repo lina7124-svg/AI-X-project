@@ -8,11 +8,6 @@ class ERPDataset(torch.utils.data.Dataset):
     def __init__(self, x, y):
         self.x = torch.tensor(x, dtype=torch.float32)
         self.y = torch.tensor(y)
-        """
-        # 이하 preprocessed
-        self.x = x
-        self.y = y
-        """
 
     def __len__(self):
         return len(self.y)
